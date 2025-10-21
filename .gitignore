@@ -47,6 +47,16 @@ test-*.js
 mock-api.js
 api-proxy.js
 
+# System files
+.cursor-server/
+.cursor/
+.autopilot.json
+.bash_history
+.bashrc
+.profile
+.docker/
+.dockerignore
+
 # Logs
 logs
 *.log
