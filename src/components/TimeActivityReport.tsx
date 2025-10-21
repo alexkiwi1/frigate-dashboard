@@ -1,6 +1,7 @@
-import React from 'react';
-import { Clock, Phone, Coffee, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Eye, Clock, Phone, Coffee, User, X } from 'lucide-react';
 import { WorkHoursResponse, BreakTimeResponse, ViolationsResponse } from '../types/api';
+import apiService from '../services/api';
 
 interface TimeActivityReportProps {
   workHoursData: WorkHoursResponse | null;
@@ -17,6 +18,21 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
   loading,
   timezone = 'Asia/Karachi'
 }) => {
+  // Video modal state
+  const [videoModal, setVideoModal] = useState<{
+    isOpen: boolean;
+    videoUrl: string;
+    employeeName: string;
+    timestamp: string;
+    eventType: 'arrival' | 'departure';
+  }>({
+    isOpen: false,
+    videoUrl: '',
+    employeeName: '',
+    timestamp: '',
+    eventType: 'arrival'
+  });
+
   // Helper function to format time duration
   const formatDuration = (hours: number): string => {
     if (hours < 1) {
@@ -48,6 +64,44 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
       day: '2-digit',
       timeZone: timezone
     });
+  };
+
+  // Handle video click
+  const handleVideoClick = async (
+    employee: any,
+    eventType: 'arrival' | 'departure'
+  ) => {
+    const timestamp = eventType === 'arrival' 
+      ? employee.arrival_timestamp 
+      : employee.departure_timestamp;
+    
+    const camera = employee.cameras && employee.cameras.length > 0 
+      ? employee.cameras[0] 
+      : null;
+    
+    if (!camera || !timestamp) {
+      alert('Missing camera or timestamp data for this employee');
+      return;
+    }
+
+    try {
+      const videoUrl = await apiService.getRecordingAtTimestamp(camera, timestamp, 5);
+      
+      if (videoUrl) {
+        setVideoModal({
+          isOpen: true,
+          videoUrl,
+          employeeName: employee.employee_name,
+          timestamp: eventType === 'arrival' ? employee.arrival_time : employee.departure_time,
+          eventType
+        });
+      } else {
+        alert('No recording found for this timestamp');
+      }
+    } catch (error) {
+      console.error('Error loading video:', error);
+      alert('Failed to load video recording');
+    }
   };
 
   // Helper function to get phone time from violations
@@ -149,14 +203,14 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
                   </div>
                 </td>
                 <td className="time-cell">
-                  <div className="time-info">
-                    <Clock size={14} />
+                  <div className="time-info clickable" onClick={() => handleVideoClick(employee, 'arrival')}>
+                    <Eye size={14} className="video-icon" />
                     {formatTime(employee.arrival_time)}
                   </div>
                 </td>
                 <td className="time-cell">
-                  <div className="time-info">
-                    <Clock size={14} />
+                  <div className="time-info clickable" onClick={() => handleVideoClick(employee, 'departure')}>
+                    <Eye size={14} className="video-icon" />
                     {formatTime(employee.departure_time)}
                   </div>
                 </td>
@@ -196,6 +250,34 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Video Modal */}
+      {videoModal.isOpen && (
+        <div className="modal-overlay" onClick={() => setVideoModal({ ...videoModal, isOpen: false })}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>{videoModal.employeeName} - {videoModal.eventType === 'arrival' ? 'Arrival' : 'Departure'}</h3>
+                <p>{videoModal.timestamp}</p>
+              </div>
+              <button 
+                className="modal-close" 
+                onClick={() => setVideoModal({ ...videoModal, isOpen: false })}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <video 
+                controls 
+                autoPlay 
+                src={videoModal.videoUrl}
+                className="modal-video"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -256,6 +256,23 @@ class ApiService {
     
     return timezoneMap[timezone] || timezoneMap['Asia/Karachi'];
   }
+
+  // Get recording at specific timestamp
+  async getRecordingAtTimestamp(camera: string, timestamp: number, window: number = 2): Promise<string | null> {
+    try {
+      const response = await this.api.get('/recordings/at-time', {
+        params: { camera, timestamp, window }
+      });
+      
+      if (response.data.success && response.data.data) {
+        return response.data.data.video_url;
+      }
+      return null;
+    } catch (error: any) {
+      console.error('Error fetching video recording:', error);
+      return null;
+    }
+  }
 }
 
 // eslint-disable-next-line import/no-anonymous-default-export
