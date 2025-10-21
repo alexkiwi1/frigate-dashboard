@@ -59,7 +59,8 @@ const App: React.FC = () => {
     const newParams = {
       ...currentParams,
       start_date: date,
-      end_date: date
+      end_date: date,
+      timezone: currentParams.timezone || 'Asia/Karachi'
     };
     setCurrentParams(newParams);
     fetchData(newParams);

@@ -8,16 +8,33 @@ export interface ApiResponse<T> {
 // Employee Types
 export interface Employee {
   employee_name: string;
-  total_work_hours: number;
+  total_work_hours: number;          // Office time (excluding breaks)
+  total_time: number;                // NEW: Full time at office
+  total_break_time: number;          // NEW: Break time
+  office_time: number;               // NEW: Alias for total_work_hours
+  unaccounted_time?: number;         // NEW: Unaccounted time
   arrival_time: string;
   departure_time: string;
+  arrival_timestamp: number;         // NEW
+  departure_timestamp: number;       // NEW
   total_activity: number;
   productivity_score: number;
-  attendance_status: 'present' | 'absent' | 'half_day' | 'partial_day';
+  attendance_status: 'present' | 'absent' | 'half_day' | 'partial_day' | 'full_day';
   work_efficiency: number;
   cameras: string[];
   zones: string[];
   sessions?: EmployeeSession[];
+  detections?: Detection[];          // NEW: Raw detection data
+  first_seen: string;               // NEW
+  last_seen: string;                // NEW
+  average_session_duration: number;
+}
+
+export interface Detection {
+  timestamp: number;
+  camera: string;
+  zones: string[];
+  label: string | null;
 }
 
 export interface EmployeeSession {
@@ -32,19 +49,28 @@ export interface BreakSession {
   break_start: string;
   break_end: string;
   duration_hours: number;
-  previous_session: {
-    camera: string;
+  previous_presence: {
     ended_at: string;
+    detection_count: number;
+    was_working: boolean;
   };
-  next_session: {
-    camera: string;
+  next_presence: {
     started_at: string;
+    detection_count: number;
+    was_working: boolean;
+  };
+  break_conditions: {
+    employee_not_detected: boolean;
+    desk_empty: boolean;
+    gap_duration_minutes: number;
   };
 }
 
 export interface EmployeeBreakData {
   employee_name: string;
   work_hours: number;
+  office_time: number;              // NEW
+  total_time: number;               // NEW
   total_break_time: number;
   arrival_time: string;
   departure_time: string;

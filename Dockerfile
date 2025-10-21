@@ -12,6 +12,10 @@ RUN npm install --legacy-peer-deps
 # Copy source code
 COPY . .
 
+# Set environment variables for build
+ARG REACT_APP_API_BASE_URL=/api
+ARG REACT_APP_API_KEY=frigate-api-key-2024
+
 # Build the app
 RUN npm run build
 

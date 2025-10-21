@@ -230,10 +230,10 @@ const BreakMonitor: React.FC<BreakMonitorProps> = ({ breakData, loading }) => {
                     <span style={{ fontWeight: '500' }}>Ended:</span> {formatTime(session.break_end)}
                   </div>
                   <div>
-                    <span style={{ fontWeight: '500' }}>Previous:</span> {session.previous_session.camera}
+                    <span style={{ fontWeight: '500' }}>Previous:</span> {session.previous_presence.ended_at}
                   </div>
                   <div>
-                    <span style={{ fontWeight: '500' }}>Next:</span> {session.next_session.camera}
+                    <span style={{ fontWeight: '500' }}>Next:</span> {session.next_presence.started_at}
                   </div>
                 </div>
               </div>

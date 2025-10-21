@@ -12,7 +12,7 @@ class ApiService {
 
   constructor() {
     this.api = axios.create({
-      baseURL: process.env['REACT_APP_API_BASE_URL'] || '/api',
+      baseURL: process.env['REACT_APP_API_BASE_URL'] || 'http://10.100.6.2:5002/v1',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -22,7 +22,7 @@ class ApiService {
     // Add request interceptor for logging
     this.api.interceptors.request.use(
       (config) => {
-        console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`, config.params);
+        console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, config.params);
         return config;
       },
       (error) => {
@@ -55,16 +55,16 @@ class ApiService {
         }
       });
 
-      // V1 API response structure: {success, message, data: {employees, summary, timezone_info}}
       if (response.data.success && response.data.data) {
         const { employees, summary, timezone_info } = response.data.data;
         
+        
         return {
           employees: employees || [],
-          total_employees: summary?.total_employees || 0,
+          total_employees: summary?.total_employees || employees?.length || 0,
           total_work_hours: summary?.total_work_hours || 0,
           average_work_hours: summary?.average_work_hours || 0,
-          period: {
+          period: summary?.period || {
             start: params.start_date || '',
             end: params.end_date || '',
             duration_hours: 24
@@ -73,13 +73,9 @@ class ApiService {
         };
       }
 
-      // Fallback if response format is unexpected
       return this.getEmptyWorkHoursResponse();
     } catch (error: any) {
       console.error('Error fetching employee work hours:', error);
-      if (error.response?.status === 404) {
-        console.warn('Work hours endpoint not found - returning empty data');
-      }
       return this.getEmptyWorkHoursResponse();
     }
   }
@@ -95,14 +91,11 @@ class ApiService {
       });
 
       if (response.data.success && response.data.data) {
-        const { break_sessions, summary, timezone_info } = response.data.data;
-        
-        // Map v1 break sessions to our format
-        const employees = this.mapBreakSessionsToEmployees(break_sessions || []);
+        const { employees, summary, timezone_info } = response.data.data;
         
         return {
-          employees,
-          total_employees: employees.length,
+          employees: employees || [],
+          total_employees: employees?.length || 0,
           total_break_time: summary?.total_break_time || 0,
           average_break_time: summary?.average_break_duration || 0,
           timezone_info: timezone_info || this.getTimezoneInfo('Asia/Karachi')
@@ -112,9 +105,6 @@ class ApiService {
       return this.getEmptyBreakTimeResponse();
     } catch (error: any) {
       console.error('Error fetching break time data:', error);
-      if (error.response?.status === 404) {
-        console.warn('Break time endpoint not found - returning empty data');
-      }
       return this.getEmptyBreakTimeResponse();
     }
   }
@@ -153,37 +143,6 @@ class ApiService {
     }
   }
 
-  // Helper: Map break sessions to employee format
-  private mapBreakSessionsToEmployees(breakSessions: any[]): any[] {
-    const employeeMap = new Map<string, any>();
-
-    breakSessions.forEach((session: any) => {
-      const name = session.employee_name;
-      
-      if (!employeeMap.has(name)) {
-        employeeMap.set(name, {
-          employee_name: name,
-          work_hours: 0,
-          total_break_time: 0,
-          arrival_time: session.break_start,
-          departure_time: session.break_end,
-          breaks: []
-        });
-      }
-
-      const employee = employeeMap.get(name);
-      employee.total_break_time += session.duration_minutes || 0;
-      employee.breaks.push({
-        break_start: session.break_start,
-        break_end: session.break_end,
-        duration_hours: (session.duration_minutes || 0) / 60,
-        previous_session: session.previous_session,
-        next_session: session.next_session
-      });
-    });
-
-    return Array.from(employeeMap.values());
-  }
 
   // Empty response helpers
   private getEmptyWorkHoursResponse(): WorkHoursResponse {

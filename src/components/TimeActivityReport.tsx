@@ -63,15 +63,6 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
     return `${employeeViolations.length} violations`;
   };
 
-  // Helper function to get break time for an employee
-  const getBreakTime = (employeeName: string): string => {
-    if (!breakData?.employees) return '0 min';
-    
-    const employee = breakData.employees.find(emp => emp.employee_name === employeeName);
-    if (!employee) return '0 min';
-    
-    return formatDuration(employee.total_break_time);
-  };
 
   if (loading) {
     return (
@@ -105,6 +96,19 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
     ? formatDate(workHoursData.employees[0].arrival_time)
     : 'N/A';
 
+  // Debug: Log the data being received
+  if (workHoursData.employees && workHoursData.employees.length > 0) {
+    const firstEmployee = workHoursData.employees[0];
+    console.log('=== FRONTEND DEBUG ===');
+    console.log('First employee data:', firstEmployee);
+    console.log('Total time:', firstEmployee.total_time);
+    console.log('Break time:', firstEmployee.total_break_time);
+    console.log('Office time:', firstEmployee.office_time);
+    console.log('Formatted break time:', formatDuration(firstEmployee.total_break_time || 0));
+    console.log('=== END DEBUG ===');
+  }
+
+
   return (
     <div className="card">
       <div className="card-header">
@@ -125,6 +129,7 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
               <th>Employee Name</th>
               <th>Arrival Time</th>
               <th>Departure Time</th>
+              <th>Total Time</th>
               <th>Office Time</th>
               <th>Break Time</th>
               <th>Phone Violations</th>
@@ -156,15 +161,21 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
                   </div>
                 </td>
                 <td className="duration-cell">
-                  <div className="duration-info">
+                  <div className="duration-info total-time">
                     <Clock size={14} />
-                    {formatDuration(employee.total_work_hours)}
+                    {formatDuration(employee.total_time)}
+                  </div>
+                </td>
+                <td className="duration-cell">
+                  <div className="duration-info office-time">
+                    <Clock size={14} />
+                    {formatDuration(employee.office_time || employee.total_work_hours)}
                   </div>
                 </td>
                 <td className="break-cell">
                   <div className="break-info">
                     <Coffee size={14} />
-                    {getBreakTime(employee.employee_name)}
+                    {formatDuration(employee.total_break_time || 0)}
                   </div>
                 </td>
                 <td className="phone-cell">
