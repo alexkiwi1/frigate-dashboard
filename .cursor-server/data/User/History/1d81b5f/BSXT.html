@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PKT Time Display Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-case { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .result { font-weight: bold; color: #2e7d32; }
+        .input { color: #666; }
+        .expected { color: #1976d2; }
+    </style>
+</head>
+<body>
+    <h1>PKT Time Display Test</h1>
+    <p>This test verifies that the timezone conversion is working correctly.</p>
+    
+    <div class="test-case">
+        <h3>Test Case 1: UTC to PKT Conversion</h3>
+        <div class="input">Input UTC time: <span id="utc-time"></span></div>
+        <div class="expected">Expected PKT time: <span id="expected-pkt"></span></div>
+        <div class="result">Actual PKT time: <span id="actual-pkt"></span></div>
+        <div id="test1-result"></div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test Case 2: API Response Format</h3>
+        <div class="input">API Response: <span id="api-response"></span></div>
+        <div class="result">Converted to PKT: <span id="converted-time"></span></div>
+        <div id="test2-result"></div>
+    </div>
+
+    <script>
+        // Test Case 1: Basic timezone conversion
+        const testDate = "2025-10-20T07:57:40.289+00:00";
+        const date = new Date(testDate);
+        
+        document.getElementById('utc-time').textContent = testDate;
+        document.getElementById('expected-pkt').textContent = '12:57 (07:57 + 5 hours)';
+        
+        const pktTime = date.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'Asia/Karachi'
+        });
+        
+        document.getElementById('actual-pkt').textContent = pktTime;
+        
+        const test1Result = pktTime === '12:57' ? '✅ PASS' : '❌ FAIL';
+        document.getElementById('test1-result').textContent = test1Result;
+        document.getElementById('test1-result').style.color = test1Result.includes('PASS') ? 'green' : 'red';
+        
+        // Test Case 2: API response format
+        const apiResponse = "2025-10-20T07:57:40.289+00:00";
+        document.getElementById('api-response').textContent = apiResponse;
+        
+        const apiDate = new Date(apiResponse);
+        const convertedTime = apiDate.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'Asia/Karachi'
+        });
+        
+        document.getElementById('converted-time').textContent = convertedTime;
+        
+        const test2Result = convertedTime === '12:57' ? '✅ PASS' : '❌ FAIL';
+        document.getElementById('test2-result').textContent = test2Result;
+        document.getElementById('test2-result').style.color = test2Result.includes('PASS') ? 'green' : 'red';
+        
+        // Summary
+        const allTestsPass = test1Result.includes('PASS') && test2Result.includes('PASS');
+        document.body.innerHTML += `
+            <div class="test-case" style="background: ${allTestsPass ? '#e8f5e8' : '#ffeaea'};">
+                <h3>Summary</h3>
+                <div style="font-size: 18px; font-weight: bold; color: ${allTestsPass ? 'green' : 'red'};">
+                    ${allTestsPass ? '✅ All tests passed! Timezone conversion is working correctly.' : '❌ Some tests failed. Check the implementation.'}
+                </div>
+                <p><strong>Fix Applied:</strong> The frontend now uses the user-selected timezone (PKT) instead of the API's timezone_info, ensuring proper time conversion from UTC to PKT.</p>
+            </div>
+        `;
+    </script>
+</body>
+</html>

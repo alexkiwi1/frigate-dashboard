@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frigate API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .employee { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .time { color: #666; font-size: 0.9em; }
+        .status { font-weight: bold; }
+        .loading { color: #999; }
+    </style>
+</head>
+<body>
+    <h1>Frigate Employee Dashboard - Real API Test</h1>
+    <div id="loading" class="loading">Loading employee data...</div>
+    <div id="employees"></div>
+
+    <script>
+        // Convert Unix timestamp to Pakistan time
+        function formatTime(unixTimestamp, timezone = 'Asia/Karachi') {
+            const date = new Date(unixTimestamp * 1000);
+            return date.toLocaleString('en-US', { 
+                timeZone: timezone,
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        // Process timeline events to create employee work hours
+        function processTimelineEvents(events) {
+            const personEvents = new Map();
+            
+            events.forEach(event => {
+                if (event.label === 'person') {
+                    const personId = event.source_id;
+                    if (!personEvents.has(personId)) {
+                        personEvents.set(personId, []);
+                    }
+                    personEvents.get(personId).push(event);
+                }
+            });
+
+            const employees = [];
+            
+            personEvents.forEach((events, personId) => {
+                events.sort((a, b) => a.timestamp - b.timestamp);
+                
+                const firstEvent = events[0];
+                const lastEvent = events[events.length - 1];
+                const workDuration = (lastEvent.timestamp - firstEvent.timestamp) / 3600;
+                
+                employees.push({
+                    name: `Employee ${personId.slice(-4)}`,
+                    arrival: formatTime(firstEvent.timestamp),
+                    departure: formatTime(lastEvent.timestamp),
+                    workHours: workDuration.toFixed(1),
+                    activity: events.length
+                });
+            });
+
+            return employees;
+        }
+
+        // Fetch data from real Frigate API
+        async function fetchEmployeeData() {
+            try {
+                // Get all cameras first
+                const camerasResponse = await fetch('http://10.0.20.6:5001/api/cameras');
+                const camerasData = await camerasResponse.json();
+                
+                if (!camerasData.success) {
+                    throw new Error('Failed to fetch cameras');
+                }
+
+                const allEvents = [];
+                
+                // Get timeline events for each camera
+                for (const camera of camerasData.cameras) {
+                    try {
+                        const response = await fetch(`http://10.0.20.6:5001/api/timeline?camera=${camera}&limit=100`);
+                        const data = await response.json();
+                        
+                        if (data.success && data.events) {
+                            allEvents.push(...data.events);
+                        }
+                    } catch (error) {
+                        console.warn(`Failed to fetch data for camera ${camera}:`, error);
+                    }
+                }
+
+                // Process events
+                const employees = processTimelineEvents(allEvents);
+                
+                // Display results
+                displayEmployees(employees);
+                
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                document.getElementById('loading').innerHTML = 'Error loading data: ' + error.message;
+            }
+        }
+
+        function displayEmployees(employees) {
+            const container = document.getElementById('employees');
+            const loading = document.getElementById('loading');
+            
+            loading.style.display = 'none';
+            
+            if (employees.length === 0) {
+                container.innerHTML = '<p>No employee data found.</p>';
+                return;
+            }
+
+            container.innerHTML = employees.map(emp => `
+                <div class="employee">
+                    <h3>${emp.name}</h3>
+                    <p><strong>Arrival:</strong> <span class="time">${emp.arrival}</span></p>
+                    <p><strong>Departure:</strong> <span class="time">${emp.departure}</span></p>
+                    <p><strong>Work Hours:</strong> ${emp.workHours} hours</p>
+                    <p><strong>Activity Count:</strong> ${emp.activity} events</p>
+                </div>
+            `).join('');
+        }
+
+        // Start fetching data
+        fetchEmployeeData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  frigate-dashboard:
+    build: .
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_BASE_URL=http://localhost:80/v1
+      - REACT_APP_API_KEY=frigate-api-key-2024
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
