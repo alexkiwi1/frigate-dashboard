@@ -28,6 +28,8 @@ export interface Employee {
   first_seen: string;               // NEW
   last_seen: string;                // NEW
   average_session_duration: number;
+  assigned_desk?: string;            // NEW: Desk ID assigned to employee (e.g., "desk_07", "desk_30")
+  assigned_desk_camera?: string;     // NEW: Camera where employee was detected at assigned desk
 }
 
 export interface Detection {
@@ -295,4 +297,77 @@ export interface EmployeeActivityPattern {
   activity_patterns: ActivityPattern;
   work_efficiency: number;
   productivity_score: number;
+}
+
+// Daily Violations Summary API Types
+export interface ViolationData {
+  timestamp: string;
+  timestampRelative: string;
+  camera: string;
+  assignedEmployee: string;
+  assignmentMethod: string;
+  assignmentConfidence: string;
+  assignmentReason: string | null;
+  faceEmployeeName: string | null;
+  deskEmployeeName: string | null;
+  zones: string[];
+  objects: string[];
+  confidence: number | null;
+  type: string;
+  media: ViolationMedia;
+}
+
+export interface ViolationConfidence {
+  score: number;
+  source: string;
+  frigate_score?: number;
+  frigate_top_score?: number;
+  detector_type?: string;
+  model_hash?: string;
+  note: string;
+}
+
+export interface ViolationMedia {
+  thumbnail_url: string;
+  snapshot_url: string;
+  video_url: string;
+  video_source: string;
+  timestamp: number;
+  camera: string;
+  violation_id: string;
+  event_id: string;
+  severity: string;
+  has_clip: number;
+  has_snapshot: number;
+  confidence: ViolationConfidence;
+  note: string;
+  frigate_api_url: string;
+}
+
+export interface DailyViolationsSummaryData {
+  summary: {
+    employeeName: string;
+    totalViolations: number;
+    violations: ViolationData[];
+    assignmentMethods: {
+      face_recognition: number;
+      desk_zone: number;
+      unknown: number;
+      camera_fallback: number | null;
+    };
+  }[];
+  count: number;
+  filters: {
+    hours?: number;
+    start_date?: string;
+    end_date?: string;
+    limit?: number;
+  };
+}
+
+export interface DailyViolationsSummaryResponse {
+  success: boolean;
+  message: string;
+  data: DailyViolationsSummaryData;
+  timestamp: string;
 }

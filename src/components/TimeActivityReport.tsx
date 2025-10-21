@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Eye, Clock, Phone, Coffee, User, X } from 'lucide-react';
-import { WorkHoursResponse, BreakTimeResponse, ViolationsResponse } from '../types/api';
+import { WorkHoursResponse, BreakTimeResponse, ViolationsResponse, ViolationData, DailyViolationsSummaryData } from '../types/api';
 import apiService from '../services/api';
+import ViolationsModal from './ViolationsModal';
 
 interface TimeActivityReportProps {
   workHoursData: WorkHoursResponse | null;
@@ -31,6 +32,19 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
     employeeName: '',
     timestamp: '',
     eventType: 'arrival'
+  });
+
+  // Violations modal state
+  const [violationsModal, setViolationsModal] = useState<{
+    isOpen: boolean;
+    employeeName: string;
+    violations: ViolationData[];
+    loading: boolean;
+  }>({
+    isOpen: false,
+    employeeName: '',
+    violations: [],
+    loading: false
   });
 
   // Helper function to format time duration
@@ -66,6 +80,13 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
     });
   };
 
+  // Helper function to check if arrival time is before 11am
+  const isEarlyArrival = (arrivalTime: string): boolean => {
+    const date = new Date(arrivalTime);
+    const hour = date.getHours();
+    return hour < 11; // Before 11am
+  };
+
   // Handle video click
   const handleVideoClick = async (
     employee: any,
@@ -85,7 +106,9 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
     }
 
     try {
+      console.log('Fetching video for:', { camera, timestamp, eventType });
       const videoUrl = await apiService.getRecordingAtTimestamp(camera, timestamp, 5);
+      console.log('Video URL received:', videoUrl);
       
       if (videoUrl) {
         setVideoModal({
@@ -95,8 +118,10 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
           timestamp: eventType === 'arrival' ? employee.arrival_time : employee.departure_time,
           eventType
         });
+        console.log('Video modal opened');
       } else {
-        alert('No recording found for this timestamp');
+        console.log('No video URL received');
+        alert(`No recording found for ${eventType} at this time. The camera may not have been recording at that moment.`);
       }
     } catch (error) {
       console.error('Error loading video:', error);
@@ -104,17 +129,90 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
     }
   };
 
+  // Handle violations click - now uses cached data
+  const handleViolationsClick = (employee: any) => {
+    if (!dailyViolations) {
+      return;
+    }
+    
+    // Find employee in the violations data
+    const employeeData = dailyViolations.summary.find(emp => emp.employeeName === employee.employee_name);
+    
+    if (employeeData && employeeData.totalViolations > 0) {
+      setViolationsModal({
+        isOpen: true,
+        employeeName: employee.employee_name,
+        violations: employeeData.violations,
+        loading: false
+      });
+    } else {
+      // No violations for this employee
+      setViolationsModal({
+        isOpen: true,
+        employeeName: employee.employee_name,
+        violations: [],
+        loading: false
+      });
+    }
+  };
+
   // Helper function to get phone time from violations
   const getPhoneTime = (employeeName: string): string => {
-    if (!violationsData?.violations) return '0 violations';
+    // Since violations are fetched per employee, show a placeholder
+    // The actual count will be shown when the violations modal is opened
+    return 'Click to view';
+  };
+
+  // Simple state for daily violations summary
+  const [dailyViolations, setDailyViolations] = useState<DailyViolationsSummaryData | null>(null);
+  const [violationsLoading, setViolationsLoading] = useState(false);
+
+  // Fetch all violations for the date range in one call
+  const fetchDailyViolations = async () => {
+    if (!workHoursData?.period?.start || !workHoursData?.period?.end) {
+      return;
+    }
+
+    setViolationsLoading(true);
+    try {
+      const response = await apiService.getDailyViolationsSummary({
+        start_date: workHoursData.period.start,
+        end_date: workHoursData.period.end
+      });
+      
+      if (response.success) {
+        setDailyViolations(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching daily violations:', error);
+    } finally {
+      setViolationsLoading(false);
+    }
+  };
+
+  // Fetch violations when date changes
+  React.useEffect(() => {
+    if (workHoursData?.period?.start && workHoursData?.period?.end) {
+      fetchDailyViolations();
+    }
+  }, [workHoursData?.period?.start, workHoursData?.period?.end]);
+
+  // Simplified helper function to get phone time from violations
+  const getPhoneTimeWithCount = (employeeName: string): string => {
+    if (violationsLoading) {
+      return 'Loading...';
+    }
     
-    const employeeViolations = violationsData.violations.filter(
-      violation => violation.employee_name === employeeName
-    );
+    if (!dailyViolations) {
+      return '';
+    }
     
-    if (employeeViolations.length === 0) return '0 violations';
+    // Find employee in the violations data
+    const employeeData = dailyViolations.summary.find(emp => emp.employeeName === employeeName);
+    const count = employeeData?.totalViolations || 0;
     
-    return `${employeeViolations.length} violations`;
+    // Return empty string if no violations, otherwise show count
+    return count === 0 ? '' : `${count} violations`;
   };
 
 
@@ -145,9 +243,9 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
     );
   }
 
-  // Get the business date from the first employee's arrival time
-  const businessDate = workHoursData.employees[0]?.arrival_time 
-    ? formatDate(workHoursData.employees[0].arrival_time)
+  // Get the business date from the period start date
+  const businessDate = workHoursData.period?.start 
+    ? formatDate(workHoursData.period.start)
     : 'N/A';
 
   // Debug: Log the data being received
@@ -181,6 +279,7 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
             <tr>
               <th>Business Date</th>
               <th>Employee Name</th>
+              <th>Desk</th>
               <th>Arrival Time</th>
               <th>Departure Time</th>
               <th>Total Time</th>
@@ -191,7 +290,10 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
             </tr>
           </thead>
           <tbody>
-            {workHoursData.employees.map((employee, index) => (
+            {workHoursData.employees
+              .filter(employee => employee.detections && employee.detections.length > 0)
+              .sort((a, b) => a.employee_name.localeCompare(b.employee_name))
+              .map((employee, index) => (
               <tr key={index}>
                 <td className="business-date-cell">
                   {businessDate}
@@ -202,10 +304,28 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
                     {employee.employee_name}
                   </div>
                 </td>
+                <td className="desk-cell">
+                  <div className="desk-info">
+                    <div className="desk-number">
+                      {employee.assigned_desk || 'N/A'}
+                    </div>
+                    {employee.assigned_desk_camera && (
+                      <div className="desk-camera">
+                        📹 {employee.assigned_desk_camera}
+                      </div>
+                    )}
+                  </div>
+                </td>
                 <td className="time-cell">
-                  <div className="time-info clickable" onClick={() => handleVideoClick(employee, 'arrival')}>
+                  <div 
+                    className={`time-info clickable ${isEarlyArrival(employee.arrival_time) ? 'early-arrival' : ''}`}
+                    onClick={() => handleVideoClick(employee, 'arrival')}
+                  >
                     <Eye size={14} className="video-icon" />
                     {formatTime(employee.arrival_time)}
+                    {isEarlyArrival(employee.arrival_time) && (
+                      <span className="camera-adjustment-indicator">📷</span>
+                    )}
                   </div>
                 </td>
                 <td className="time-cell">
@@ -233,10 +353,19 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
                   </div>
                 </td>
                 <td className="phone-cell">
-                  <div className="phone-info">
-                    <Phone size={14} />
-                    {getPhoneTime(employee.employee_name)}
-                  </div>
+                  {getPhoneTimeWithCount(employee.employee_name) ? (
+                    <div 
+                      className="phone-info clickable-violations" 
+                      onClick={() => handleViolationsClick(employee)}
+                    >
+                      <Phone size={14} />
+                      {getPhoneTimeWithCount(employee.employee_name)}
+                    </div>
+                  ) : (
+                    <div className="phone-info empty-cell">
+                      {/* Empty cell - no violations */}
+                    </div>
+                  )}
                 </td>
                 <td className="actions-cell">
                   <div className="action-buttons">
@@ -249,6 +378,22 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Summary Section */}
+      <div className="summary-section">
+        <div className="summary-stats">
+          <div className="stat-item">
+            <span className="stat-label">Employees with Activity:</span>
+            <span className="stat-value">
+              {workHoursData.employees.filter(employee => employee.detections && employee.detections.length > 0).length}
+            </span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Total Employees:</span>
+            <span className="stat-value">{workHoursData.employees.length}</span>
+          </div>
+        </div>
       </div>
 
       {/* Video Modal */}
@@ -277,6 +422,16 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Violations Modal */}
+      {!violationsModal.loading && (
+        <ViolationsModal
+          isOpen={violationsModal.isOpen}
+          onClose={() => setViolationsModal({ ...violationsModal, isOpen: false })}
+          violations={violationsModal.violations}
+          employeeName={violationsModal.employeeName}
+        />
       )}
 
     </div>

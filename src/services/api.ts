@@ -3,9 +3,13 @@ import {
   ApiResponse,
   WorkHoursResponse,
   BreakTimeResponse,
-  ViolationsResponse,
+  ViolationsResponse as ViolationsApiResponse,
+  DailyViolationsSummaryResponse,
   ApiParams
 } from '../types/api';
+
+// Add type alias
+type ViolationsResponse = ViolationsApiResponse;
 
 class ApiService {
   private api: AxiosInstance;
@@ -51,6 +55,7 @@ class ApiService {
       const response = await this.api.get('/employees/work-hours', {
         params: {
           timezone: 'Asia/Karachi',
+          limit: 10, // Reduced limit to prevent overwhelming the frontend
           ...params
         }
       });
@@ -86,6 +91,7 @@ class ApiService {
       const response = await this.api.get('/employees/break-time', {
         params: {
           timezone: 'Asia/Karachi',
+          limit: 10, // Reduced limit to prevent overwhelming the frontend
           ...params
         }
       });
@@ -109,36 +115,37 @@ class ApiService {
     }
   }
 
-  // Cell Phone Violations API
-  async getCellPhoneViolations(params: ApiParams = {}): Promise<ViolationsResponse> {
+  // Daily Violations Summary API - Get all violations for all employees in one call
+  async getDailyViolationsSummary(params: { start_date?: string; end_date?: string; hours?: number } = {}): Promise<DailyViolationsSummaryResponse> {
     try {
-      const response = await this.api.get('/violations/cell-phones', {
+      const response = await this.api.get('/violations/summary', {
         params: {
           timezone: 'Asia/Karachi',
+          limit: 100,
           ...params
         }
       });
-
+      
       if (response.data.success && response.data.data) {
-        const { violations, summary } = response.data.data;
-        
-        return {
-          violations: violations || [],
-          total_violations: summary?.total_violations || violations?.length || 0,
-          summary: {
-            by_employee: summary?.by_employee || {},
-            by_camera: summary?.by_camera || {},
-            by_severity: summary?.by_severity || {}
-          }
-        };
+        return response.data;
       }
+      
+      return this.getEmptyDailyViolationsSummaryResponse();
+    } catch (error: any) {
+      console.error('Error fetching daily violations summary:', error);
+      return this.getEmptyDailyViolationsSummaryResponse();
+    }
+  }
 
+  // Cell Phone Violations API - Get all violations for all employees (deprecated)
+  async getCellPhoneViolations(params: ApiParams = {}): Promise<ViolationsResponse> {
+    try {
+      // Since there's no general violations endpoint, we'll return empty data for now
+      // The violations will be fetched per employee when needed
+      console.warn('General violations endpoint not available - returning empty data');
       return this.getEmptyViolationsResponse();
     } catch (error: any) {
       console.error('Error fetching cell phone violations:', error);
-      if (error.response?.status === 404) {
-        console.warn('Violations endpoint not found - returning empty data');
-      }
       return this.getEmptyViolationsResponse();
     }
   }
@@ -179,6 +186,19 @@ class ApiService {
         by_camera: {},
         by_severity: {}
       }
+    };
+  }
+
+  private getEmptyDailyViolationsSummaryResponse(): DailyViolationsSummaryResponse {
+    return {
+      success: false,
+      message: 'No violations found',
+      data: {
+        summary: [],
+        count: 0,
+        filters: {}
+      },
+      timestamp: new Date().toISOString()
     };
   }
 
@@ -264,13 +284,45 @@ class ApiService {
         params: { camera, timestamp, window }
       });
       
+      console.log('Recording API response:', response.data);
+      
       if (response.data.success && response.data.data) {
         return response.data.data.video_url;
       }
+      
+      console.log('No recording found:', response.data.message);
       return null;
     } catch (error: any) {
       console.error('Error fetching video recording:', error);
       return null;
+    }
+  }
+
+  // Note: Video URLs are now direct - no API call needed
+  // The video_url field in ViolationMedia now contains the direct URL
+
+  // Get violations by employee name
+  async getEmployeeViolations(
+    employeeName: string, 
+    params: { hours?: number; start_date?: string; end_date?: string; limit?: number } = {}
+  ): Promise<ViolationsResponse> {
+    try {
+      const response = await this.api.get(`/violations/employee/${encodeURIComponent(employeeName)}`, {
+        params: {
+          timezone: 'Asia/Karachi',
+          limit: 100,
+          ...params
+        }
+      });
+      
+      if (response.data.success && response.data.data) {
+        return response.data;
+      }
+      
+      return this.getEmptyViolationsResponse();
+    } catch (error: any) {
+      console.error('Error fetching employee violations:', error);
+      return this.getEmptyViolationsResponse();
     }
   }
 }
