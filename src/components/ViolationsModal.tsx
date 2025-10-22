@@ -92,8 +92,8 @@ export const ViolationsModal: React.FC<ViolationsModalProps> = ({
   // Helper function to get confidence source label
   const getConfidenceSourceLabel = (source: string) => {
     switch (source) {
-      case 'frigate_score': return 'Frigate AI';
-      case 'frigate_top_score': return 'Frigate Top';
+      case 'frigate_score': return 'AI Detection';
+      case 'frigate_top_score': return 'AI Top Score';
       case 'default_estimate': return 'Estimated';
       default: return 'Unknown';
     }

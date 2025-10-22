@@ -455,8 +455,7 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
             {workHoursData.employees
               .filter(employee => 
                 employee.detections && employee.detections.length > 0 && 
-                !employee.false_positive_reason && 
-                employee.status !== 'absent'
+                !employee.false_positive_reason
               )
               .sort((a, b) => a.employee_name.localeCompare(b.employee_name))
               .map((employee, index) => (
@@ -585,36 +584,6 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
       </div>
 
       {/* Summary Section */}
-      <div className="summary-section">
-        <div className="summary-stats">
-          <div className="stat-item">
-            <span className="stat-label">Employees with Activity:</span>
-            <span className="stat-value">
-              {workHoursData.employees.filter(employee => 
-              employee.detections && employee.detections.length > 0 && 
-              !employee.false_positive_reason && 
-              employee.status !== 'absent'
-            ).length}
-            </span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Total Employees:</span>
-            <span className="stat-value">{workHoursData.employees.length}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Absent (Hidden):</span>
-            <span className="stat-value" style={{ color: '#ef4444' }}>
-              {workHoursData.employees.filter(employee => employee.status === 'absent').length}
-            </span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">Filtered (False Positives):</span>
-            <span className="stat-value" style={{ color: '#f59e0b' }}>
-              {workHoursData.employees.filter(employee => employee.false_positive_reason).length}
-            </span>
-          </div>
-        </div>
-      </div>
 
       {/* Video Modal */}
       {videoModal.isOpen && (

@@ -1,7 +1,7 @@
 {
-  "name": "frigate-dashboard",
+  "name": "net2apps-dashboard",
   "version": "1.0.0",
-  "description": "Frigate Employee Monitoring Dashboard",
+  "description": "Net2apps Employee Monitoring Dashboard",
   "private": true,
   "dependencies": {
     "@types/node": "^16.18.0",

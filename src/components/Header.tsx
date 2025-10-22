@@ -23,6 +23,22 @@ const Header: React.FC<HeaderProps> = ({
 
   const [timezone, setTimezone] = useState('PKT');
 
+  // Convert timezone to user-friendly display name
+  const getTimezoneDisplayName = (tz: string): string => {
+    const timezoneMap: Record<string, string> = {
+      'Asia/Karachi': 'Pakistan Time (PKT)',
+      'America/New_York': 'Eastern Time (EST)',
+      'UTC': 'UTC',
+      'Europe/Paris': 'Central European Time (CET)',
+      'Asia/Tokyo': 'Japan Standard Time (JST)',
+      'PKT': 'Pakistan Time (PKT)',
+      'EST': 'Eastern Time (EST)',
+      'CET': 'Central European Time (CET)',
+      'JST': 'Japan Standard Time (JST)'
+    };
+    return timezoneMap[tz] || tz;
+  };
+
   const timezones = [
     { value: 'PKT', label: 'Pakistan Time (PKT)' },
     { value: 'EST', label: 'Eastern Time (EST)' },
@@ -53,19 +69,18 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="header">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div>
-          <h1>🚀 Frigate Employee Dashboard</h1>
-          <p style={{ color: '#6b7280', marginTop: '5px' }}>
+      <div className="header-top">
+        <div className="header-title">
+          <h1>🚀 Net2apps Employee Dashboard</h1>
+          <p className="header-subtitle">
             Real-time employee monitoring and analytics
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="header-actions">
           <button
             className="btn btn-secondary"
             onClick={onRefresh}
             disabled={loading}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             <RefreshCw size={16} className={loading ? 'rotating' : ''} />
             {loading ? 'Refreshing...' : 'Refresh'}
@@ -81,7 +96,6 @@ const Header: React.FC<HeaderProps> = ({
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           />
         </div>
 
@@ -91,7 +105,6 @@ const Header: React.FC<HeaderProps> = ({
             id="timezone"
             value={timezone}
             onChange={handleTimezoneChange}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             {timezones.map(tz => (
               <option key={tz.value} value={tz.value}>
@@ -99,55 +112,40 @@ const Header: React.FC<HeaderProps> = ({
               </option>
             ))}
           </select>
-          {currentTimezone && (
-            <div style={{ 
-              fontSize: '0.75rem', 
-              color: '#6b7280', 
-              marginTop: '4px',
-              fontStyle: 'italic'
-            }}>
-              Active: {currentTimezone}
-            </div>
-          )}
         </div>
 
-        <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button type="submit" className="btn btn-primary">
           <Calendar size={16} />
           Apply
         </button>
       </form>
 
-      <div style={{ marginTop: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+      <div className="quick-date-buttons">
         <button
-          className="btn btn-secondary"
+          className="btn btn-secondary btn-small"
           onClick={() => handleQuickDate(1)}
-          style={{ fontSize: '12px', padding: '6px 12px' }}
         >
           Yesterday
         </button>
         <button
-          className="btn btn-secondary"
+          className="btn btn-secondary btn-small"
           onClick={() => handleQuickDate(7)}
-          style={{ fontSize: '12px', padding: '6px 12px' }}
         >
           7 Days Ago
         </button>
         <button
-          className="btn btn-secondary"
+          className="btn btn-secondary btn-small"
           onClick={() => handleQuickDate(30)}
-          style={{ fontSize: '12px', padding: '6px 12px' }}
         >
           30 Days Ago
         </button>
         <button
-          className="btn btn-secondary"
+          className="btn btn-secondary btn-small"
           onClick={() => handleQuickDate(0)}
-          style={{ fontSize: '12px', padding: '6px 12px' }}
         >
           Today
         </button>
       </div>
-
     </header>
   );
 };

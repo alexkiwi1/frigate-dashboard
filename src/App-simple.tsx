@@ -117,7 +117,7 @@ const App: React.FC = () => {
         color: '#6b7280',
         fontSize: '0.875rem'
       }}>
-        Frigate Employee Dashboard © 2025
+        Net2apps Employee Dashboard © 2025
       </footer>
     </div>
   );

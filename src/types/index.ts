@@ -1,4 +1,4 @@
-// Frigate API Types
+// Net2apps API Types
 export interface Camera {
   name: string;
   enabled: boolean;
