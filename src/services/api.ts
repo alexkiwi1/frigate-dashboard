@@ -209,11 +209,12 @@ class ApiService {
   }
 
   getDefaultParams(): ApiParams {
-    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
 
     return {
-      start_date: this.formatDate(today),
-      end_date: this.formatDate(today),
+      start_date: this.formatDate(yesterday),
+      end_date: this.formatDate(yesterday),
       timezone: 'Asia/Karachi',
       limit: 100
     };

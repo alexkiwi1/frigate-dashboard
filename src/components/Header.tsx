@@ -17,8 +17,9 @@ const Header: React.FC<HeaderProps> = ({
   currentTimezone 
 }) => {
   const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
   });
 
   const [timezone, setTimezone] = useState('PKT');
