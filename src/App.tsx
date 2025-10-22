@@ -34,22 +34,21 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      const [employees, breaks, violations] = await Promise.all([
+      const [employees, breaks] = await Promise.all([
         apiService.getEmployeeWorkHours(params),
-        apiService.getEmployeeBreakTime(params),
-        apiService.getCellPhoneViolations(params)
+        apiService.getEmployeeBreakTime(params)
       ]);
 
       setWorkHoursData(employees);
       setBreakData(breaks);
-      setViolationsData(violations);
+      setViolationsData(null); // Violations are now handled by TimeActivityReport component
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // No dependencies needed since we're not using any external variables
 
   useEffect(() => {
     fetchData(currentParams);
@@ -63,8 +62,8 @@ const App: React.FC = () => {
       timezone: currentParams.timezone || 'Asia/Karachi'
     };
     setCurrentParams(newParams);
-    fetchData(newParams);
-  }, [currentParams, fetchData]);
+    // Remove the explicit fetchData call - let useEffect handle it
+  }, [currentParams]);
 
   const handleTimezoneChange = useCallback((timezone: string) => {
     // Convert abbreviations to IANA timezone format for v1 API
@@ -82,8 +81,8 @@ const App: React.FC = () => {
       timezone: ianaTimezone
     };
     setCurrentParams(newParams);
-    fetchData(newParams);
-  }, [currentParams, fetchData]);
+    // Remove the explicit fetchData call - let useEffect handle it
+  }, [currentParams]);
 
   const handleRefresh = useCallback(() => {
     fetchData(currentParams);

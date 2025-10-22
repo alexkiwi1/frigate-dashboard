@@ -87,28 +87,189 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
     return hour < 11; // Before 11am
   };
 
+  // Helper function to get departure status and styling
+  const getDepartureStatus = (employee: any) => {
+    // Use status field to determine if employee departed
+    if (employee.status === 'present') {
+      return { 
+        text: 'Still at office', 
+        color: '#10b981', 
+        icon: '🟢',
+        confidence: 'none'
+      };
+    }
+    
+    const confidence = employee.departure_confidence || 'low';
+    const method = employee.departure_method || 'session_end';
+    
+    if (confidence === 'high') {
+      return { 
+        text: 'Departed (High Confidence)', 
+        color: '#3b82f6', 
+        icon: '✓',
+        confidence: 'high'
+      };
+    } else if (confidence === 'medium') {
+      return { 
+        text: 'Departed (Medium Confidence)', 
+        color: '#f59e0b', 
+        icon: '~',
+        confidence: 'medium'
+      };
+    } else {
+      return { 
+        text: 'Departed (Low Confidence)', 
+        color: '#ef4444', 
+        icon: '?',
+        confidence: 'low'
+      };
+    }
+  };
+
+  // Helper function to get arrival status and styling
+  const getArrivalStatus = (employee: any) => {
+    // Use status field to determine if employee arrived
+    if (employee.status === 'absent') {
+      return { 
+        text: 'No arrival detected', 
+        color: '#ef4444', 
+        icon: '❌',
+        confidence: 'none'
+      };
+    }
+    
+    const confidence = employee.arrival_confidence || 'low';
+    const method = employee.arrival_method || 'session_start';
+    
+    if (confidence === 'high') {
+      return { 
+        text: 'Arrived (High Confidence)', 
+        color: '#3b82f6', 
+        icon: '✓',
+        confidence: 'high'
+      };
+    } else if (confidence === 'medium') {
+      return { 
+        text: 'Arrived (Medium Confidence)', 
+        color: '#f59e0b', 
+        icon: '~',
+        confidence: 'medium'
+      };
+    } else {
+      return { 
+        text: 'Arrived (Low Confidence)', 
+        color: '#ef4444', 
+        icon: '?',
+        confidence: 'low'
+      };
+    }
+  };
+
+  // Helper function to format arrival time with confidence indicator
+  const formatArrivalTime = (employee: any): string => {
+    if (employee.status === 'absent') {
+      return 'No arrival';
+    }
+    
+    const time = formatTime(employee.arrival_time);
+    const status = getArrivalStatus(employee);
+    
+    return `${time} ${status.icon}`;
+  };
+
+  // Helper function to format departure time with confidence indicator
+  const formatDepartureTime = (employee: any): string => {
+    if (employee.status === 'present') {
+      return 'Still at office';
+    }
+    
+    const time = formatTime(employee.departure_time);
+    const status = getDepartureStatus(employee);
+    
+    return `${time} ${status.icon}`;
+  };
+
+  // Helper function to get employee status using the new status field
+  const getEmployeeStatus = (employee: any) => {
+    // Handle false positives first
+    if (employee.false_positive_reason) {
+      return {
+        status: 'filtered',
+        text: `Filtered: ${employee.false_positive_reason}`,
+        color: '#f59e0b',
+        icon: '⚠️'
+      };
+    }
+    
+    // Use the new status field from API
+    switch (employee.status) {
+      case 'absent':
+        return {
+          status: 'absent',
+          text: 'Absent',
+          color: '#ef4444',
+          icon: '🔴'
+        };
+      case 'present':
+        return {
+          status: 'present',
+          text: 'Present',
+          color: '#10b981',
+          icon: '🟢'
+        };
+      case 'departed':
+        return {
+          status: 'departed',
+          text: 'Departed',
+          color: '#3b82f6',
+          icon: '✅'
+        };
+      default:
+        return {
+          status: 'unknown',
+          text: 'Unknown',
+          color: '#6b7280',
+          icon: '❓'
+        };
+    }
+  };
+
   // Handle video click
   const handleVideoClick = async (
     employee: any,
     eventType: 'arrival' | 'departure'
   ) => {
-    const timestamp = eventType === 'arrival' 
-      ? employee.arrival_timestamp 
-      : employee.departure_timestamp;
+    console.log('Video click:', employee.employee_name, eventType);
     
-    const camera = employee.cameras && employee.cameras.length > 0 
-      ? employee.cameras[0] 
-      : null;
-    
-    if (!camera || !timestamp) {
-      alert('Missing camera or timestamp data for this employee');
-      return;
-    }
-
     try {
-      console.log('Fetching video for:', { camera, timestamp, eventType });
-      const videoUrl = await apiService.getRecordingAtTimestamp(camera, timestamp, 5);
-      console.log('Video URL received:', videoUrl);
+      // First, try to get video URL from session data (NEW: Use cached URL from API)
+      let videoUrl: string | null = null;
+      
+      if (employee.sessions && employee.sessions.length > 0) {
+        // Use the first session's video URL if available
+        videoUrl = employee.sessions[0].video_url;
+        console.log('Video URL from session data:', videoUrl);
+      }
+      
+      // If no video URL in session data, fall back to API call
+      if (!videoUrl) {
+        const timestamp = eventType === 'arrival' 
+          ? employee.arrival_timestamp 
+          : employee.departure_timestamp;
+        
+        const camera = employee.cameras && employee.cameras.length > 0 
+          ? employee.cameras[0] 
+          : null;
+        
+        if (!camera || !timestamp) {
+          alert('Missing camera or timestamp data for this employee');
+          return;
+        }
+
+        console.log('Fetching video via API for:', { camera, timestamp, eventType });
+        videoUrl = await apiService.getRecordingAtTimestamp(camera, timestamp, 5);
+        console.log('Video URL from API:', videoUrl);
+      }
       
       if (videoUrl) {
         setVideoModal({
@@ -118,9 +279,9 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
           timestamp: eventType === 'arrival' ? employee.arrival_time : employee.departure_time,
           eventType
         });
-        console.log('Video modal opened');
+        console.log('Video modal opened with URL:', videoUrl);
       } else {
-        console.log('No video URL received');
+        console.log('No video URL available');
         alert(`No recording found for ${eventType} at this time. The camera may not have been recording at that moment.`);
       }
     } catch (error) {
@@ -279,6 +440,7 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
             <tr>
               <th>Business Date</th>
               <th>Employee Name</th>
+              <th>Status</th>
               <th>Desk</th>
               <th>Arrival Time</th>
               <th>Departure Time</th>
@@ -291,7 +453,11 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
           </thead>
           <tbody>
             {workHoursData.employees
-              .filter(employee => employee.detections && employee.detections.length > 0)
+              .filter(employee => 
+                employee.detections && employee.detections.length > 0 && 
+                !employee.false_positive_reason && 
+                employee.status !== 'absent'
+              )
               .sort((a, b) => a.employee_name.localeCompare(b.employee_name))
               .map((employee, index) => (
               <tr key={index}>
@@ -302,6 +468,26 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
                   <div className="employee-info">
                     <User size={16} />
                     {employee.employee_name}
+                    {employee.false_positive_reason && (
+                      <div className="filtered-indicator" style={{ color: '#f59e0b', fontSize: '0.75rem', marginTop: '2px' }}>
+                        ⚠️ Filtered: {employee.false_positive_reason}
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="status-cell">
+                  <div 
+                    className="status-indicator"
+                    style={{ 
+                      color: getEmployeeStatus(employee).color,
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <span>{getEmployeeStatus(employee).icon}</span>
+                    <span>{getEmployeeStatus(employee).text}</span>
                   </div>
                 </td>
                 <td className="desk-cell">
@@ -318,20 +504,38 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
                 </td>
                 <td className="time-cell">
                   <div 
-                    className={`time-info clickable ${isEarlyArrival(employee.arrival_time) ? 'early-arrival' : ''}`}
+                    className={`time-info clickable ${isEarlyArrival(employee.arrival_time) ? 'early-arrival' : ''} ${getArrivalStatus(employee).confidence !== 'none' ? 'arrival-time' : ''}`}
                     onClick={() => handleVideoClick(employee, 'arrival')}
+                    style={{ color: getArrivalStatus(employee).color }}
                   >
                     <Eye size={14} className="video-icon" />
-                    {formatTime(employee.arrival_time)}
+                    {formatArrivalTime(employee)}
                     {isEarlyArrival(employee.arrival_time) && (
                       <span className="camera-adjustment-indicator">📷</span>
+                    )}
+                    {employee.arrival_method && employee.arrival_method !== 'none' && (
+                      <span className="arrival-method-indicator">
+                        {employee.arrival_method === 'face_at_desk' ? '👤' : 
+                         employee.arrival_method === 'person_at_desk' ? '👥' : 
+                         employee.arrival_method === 'scheduled' ? '📅' : '📋'}
+                      </span>
                     )}
                   </div>
                 </td>
                 <td className="time-cell">
-                  <div className="time-info clickable" onClick={() => handleVideoClick(employee, 'departure')}>
+                  <div 
+                    className={`time-info clickable ${getDepartureStatus(employee).confidence !== 'none' ? 'departure-time' : ''}`}
+                    onClick={() => handleVideoClick(employee, 'departure')}
+                    style={{ color: getDepartureStatus(employee).color }}
+                  >
                     <Eye size={14} className="video-icon" />
-                    {formatTime(employee.departure_time)}
+                    {formatDepartureTime(employee)}
+                    {employee.departure_method && employee.departure_method !== 'none' && (
+                      <span className="departure-method-indicator">
+                        {employee.departure_method === 'face_at_desk' ? '👤' : 
+                         employee.departure_method === 'person_at_desk' ? '👥' : '📋'}
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td className="duration-cell">
@@ -386,12 +590,28 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
           <div className="stat-item">
             <span className="stat-label">Employees with Activity:</span>
             <span className="stat-value">
-              {workHoursData.employees.filter(employee => employee.detections && employee.detections.length > 0).length}
+              {workHoursData.employees.filter(employee => 
+              employee.detections && employee.detections.length > 0 && 
+              !employee.false_positive_reason && 
+              employee.status !== 'absent'
+            ).length}
             </span>
           </div>
           <div className="stat-item">
             <span className="stat-label">Total Employees:</span>
             <span className="stat-value">{workHoursData.employees.length}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Absent (Hidden):</span>
+            <span className="stat-value" style={{ color: '#ef4444' }}>
+              {workHoursData.employees.filter(employee => employee.status === 'absent').length}
+            </span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Filtered (False Positives):</span>
+            <span className="stat-value" style={{ color: '#f59e0b' }}>
+              {workHoursData.employees.filter(employee => employee.false_positive_reason).length}
+            </span>
           </div>
         </div>
       </div>

@@ -732,6 +732,44 @@ code {
   opacity: 0.8;
 }
 
+/* Arrival time styling */
+.arrival-time {
+  font-weight: 600;
+}
+
+.arrival-method-indicator {
+  margin-left: 4px;
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+/* Status cell styling */
+.status-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Departure time styling */
+.departure-time {
+  font-weight: 600;
+}
+
+.departure-method-indicator {
+  margin-left: 4px;
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
 /* Enhanced confidence display */
 .confidence-display {
   display: flex;

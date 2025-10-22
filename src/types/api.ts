@@ -13,10 +13,16 @@ export interface Employee {
   total_break_time: number;          // NEW: Break time
   office_time: number;               // NEW: Alias for total_work_hours
   unaccounted_time?: number;         // NEW: Unaccounted time
-  arrival_time: string;
-  departure_time: string;
+  arrival_time: string;             // Can be ISO string or "no arrival"
+  departure_time: string;           // Can be ISO string or "no arrival"
+  status: 'absent' | 'present' | 'departed'; // NEW: Clear employee status
   arrival_timestamp: number;         // NEW
   departure_timestamp: number;       // NEW
+  arrival_method?: string;           // NEW: How arrival was detected
+  arrival_confidence?: string;       // NEW: Confidence level of arrival detection
+  departure_method?: string;         // NEW: How departure was detected
+  departure_confidence?: string;      // NEW: Confidence level of departure detection
+  false_positive_reason?: string | null; // NEW: Reason if marked as false positive
   total_activity: number;
   productivity_score: number;
   attendance_status: 'present' | 'absent' | 'half_day' | 'partial_day' | 'full_day';
@@ -45,6 +51,7 @@ export interface EmployeeSession {
   duration_hours: number;
   cameras: string[];
   zones: string[];
+  video_url?: string;  // NEW: Video URL for this session
 }
 
 export interface BreakSession {

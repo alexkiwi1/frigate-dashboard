@@ -20,7 +20,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 30000,
+      timeout: 15000, // Reduced timeout to 15 seconds
     });
 
     // Add request interceptor for logging
@@ -56,6 +56,7 @@ class ApiService {
         params: {
           timezone: 'Asia/Karachi',
           limit: 10, // Reduced limit to prevent overwhelming the frontend
+          _t: Date.now(), // Cache-busting timestamp
           ...params
         }
       });
@@ -209,11 +210,9 @@ class ApiService {
 
   getDefaultParams(): ApiParams {
     const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
 
     return {
-      start_date: this.formatDate(yesterday),
+      start_date: this.formatDate(today),
       end_date: this.formatDate(today),
       timezone: 'Asia/Karachi',
       limit: 100
@@ -281,7 +280,12 @@ class ApiService {
   async getRecordingAtTimestamp(camera: string, timestamp: number, window: number = 2): Promise<string | null> {
     try {
       const response = await this.api.get('/recordings/at-time', {
-        params: { camera, timestamp, window }
+        params: { 
+          camera, 
+          timestamp, 
+          window,
+          _t: Date.now() // Cache-busting timestamp
+        }
       });
       
       console.log('Recording API response:', response.data);
