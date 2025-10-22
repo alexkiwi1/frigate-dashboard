@@ -448,14 +448,14 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
               <th>Office Time</th>
               <th>Break Time</th>
               <th>Phone Violations</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {workHoursData.employees
               .filter(employee => 
                 employee.detections && employee.detections.length > 0 && 
-                !employee.false_positive_reason
+                !employee.false_positive_reason && 
+                employee.status !== 'absent'
               )
               .sort((a, b) => a.employee_name.localeCompare(b.employee_name))
               .map((employee, index) => (
@@ -569,13 +569,6 @@ const TimeActivityReport: React.FC<TimeActivityReportProps> = ({
                       {/* Empty cell - no violations */}
                     </div>
                   )}
-                </td>
-                <td className="actions-cell">
-                  <div className="action-buttons">
-                    <button className="btn btn-sm btn-outline">
-                      View Details
-                    </button>
-                  </div>
                 </td>
               </tr>
             ))}
