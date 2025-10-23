@@ -16,7 +16,7 @@ class ApiService {
 
   constructor() {
     this.api = axios.create({
-      baseURL: process.env['REACT_APP_API_BASE_URL'] || 'http://10.0.20.8:5002/v1',
+      baseURL: process.env['REACT_APP_API_BASE_URL'] || '/api',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -40,6 +40,12 @@ class ApiService {
       (response) => {
         // V1 API returns {success, data, message, timestamp}
         console.log('API Response:', response.data);
+        
+        // Transform media URLs in response data
+        if (response.data && response.data.data) {
+          this.transformResponseMediaUrls(response.data.data);
+        }
+        
         return response;
       },
       (error) => {
@@ -277,14 +283,49 @@ class ApiService {
     return timezoneMap[timezone] || timezoneMap['Asia/Karachi'];
   }
 
+  // Transform Frigate URLs to proxied URLs
+  private transformMediaUrl(url: string): string {
+    if (!url) return url;
+    
+    // Convert direct Frigate URLs to proxied URLs
+    // http://10.0.20.6:5000/api/events/... -> /media/api/events/...
+    if (url.includes('10.0.20.6:5000')) {
+      return url.replace('http://10.0.20.6:5000', '/media');
+    }
+    
+    return url;
+  }
+
+  // Transform media URLs in response data recursively
+  private transformResponseMediaUrls(data: any): void {
+    if (!data) return;
+    
+    if (typeof data === 'string' && data.includes('10.0.20.6:5000')) {
+      // This is a URL string, transform it
+      return; // Skip string transformation in this method
+    }
+    
+    if (Array.isArray(data)) {
+      data.forEach(item => this.transformResponseMediaUrls(item));
+    } else if (typeof data === 'object') {
+      Object.keys(data).forEach(key => {
+        if (key.includes('url') || key.includes('Url')) {
+          // Transform URL fields
+          data[key] = this.transformMediaUrl(data[key]);
+        } else {
+          // Recursively transform nested objects
+          this.transformResponseMediaUrls(data[key]);
+        }
+      });
+    }
+  }
+
   // Get recording at specific timestamp
   async getRecordingAtTimestamp(camera: string, timestamp: number, window: number = 2): Promise<string | null> {
     try {
       const response = await this.api.get('/recordings/at-time', {
         params: { 
-          camera, 
-          timestamp, 
-          window,
+          camera, timestamp, window,
           _t: Date.now() // Cache-busting timestamp
         }
       });
@@ -292,7 +333,7 @@ class ApiService {
       console.log('Recording API response:', response.data);
       
       if (response.data.success && response.data.data) {
-        return response.data.data.video_url;
+        return this.transformMediaUrl(response.data.data.video_url);
       }
       
       console.log('No recording found:', response.data.message);
