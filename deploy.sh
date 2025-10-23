@@ -32,7 +32,7 @@ if [ $? -eq 0 ]; then
     echo "✅ Dashboard deployed successfully!"
     echo ""
     echo "🌐 Dashboard URL: http://localhost:3000"
-    echo "📊 API Base URL: http://10.100.6.2:5002/v1"
+    echo "📊 API Base URL: http://10.0.20.8:5002/v1"
     echo ""
     echo "📋 Useful commands:"
     echo "  View logs: docker logs frigate-dashboard"

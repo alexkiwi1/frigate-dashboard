@@ -33,7 +33,7 @@ A modern React TypeScript dashboard for monitoring employee activity, work hours
 
 2. **Set environment variables:**
    ```bash
-   export REACT_APP_API_BASE_URL=http://10.100.6.2:5002/v1
+   export REACT_APP_API_BASE_URL=http://10.0.20.8:5002/v1
    export REACT_APP_API_KEY=frigate-api-key-2024
    ```
 
@@ -44,7 +44,7 @@ A modern React TypeScript dashboard for monitoring employee activity, work hours
 
 ## API Configuration
 
-The dashboard connects to the Frigate middleware API at `http://10.100.6.2:5002/v1` with the following endpoints:
+The dashboard connects to the Frigate middleware API at `http://10.0.20.8:5002/v1` with the following endpoints:
 
 - **Employee APIs**: Work hours, break time, attendance, activity patterns
 - **Camera APIs**: Camera summary, activity monitoring
