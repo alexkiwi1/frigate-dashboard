@@ -109,3 +109,4 @@ jspm_packages/
 
 # DynamoDB Local files
 .dynamodb/
+backups/backup-20251028-083342.tar.gz backups/backup-20251030-211104-repo.tar.gz backups/backup-20251030-211104-src-media-transform.tar.gz backups/backup-20251030-211204-repo.tar.gz backups/backup-20251030-211204-src-media-transform.tar.gz
