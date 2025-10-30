@@ -1,0 +1,380 @@
+// API Response Types
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
+// Employee Types
+export interface Employee {
+  employee_name: string;
+  total_work_hours: number;          // Office time (excluding breaks)
+  total_time: number;                // NEW: Full time at office
+  total_break_time: number;          // NEW: Break time
+  office_time: number;               // NEW: Alias for total_work_hours
+  unaccounted_time?: number;         // NEW: Unaccounted time
+  arrival_time: string;             // Can be ISO string or "no arrival"
+  departure_time: string;           // Can be ISO string or "no arrival"
+  status: 'absent' | 'present' | 'departed'; // NEW: Clear employee status
+  arrival_timestamp: number;         // NEW
+  departure_timestamp: number;       // NEW
+  arrival_method?: string;           // NEW: How arrival was detected
+  arrival_confidence?: string;       // NEW: Confidence level of arrival detection
+  departure_method?: string;         // NEW: How departure was detected
+  departure_confidence?: string;      // NEW: Confidence level of departure detection
+  false_positive_reason?: string | null; // NEW: Reason if marked as false positive
+  total_activity: number;
+  productivity_score: number;
+  attendance_status: 'present' | 'absent' | 'half_day' | 'partial_day' | 'full_day';
+  work_efficiency: number;
+  cameras: string[];
+  zones: string[];
+  sessions?: EmployeeSession[];
+  detections?: Detection[];          // NEW: Raw detection data
+  first_seen: string;               // NEW
+  last_seen: string;                // NEW
+  average_session_duration: number;
+  assigned_desk?: string;            // NEW: Desk ID assigned to employee (e.g., "desk_07", "desk_30")
+  assigned_desk_camera?: string;     // NEW: Camera where employee was detected at assigned desk
+}
+
+export interface Detection {
+  timestamp: number;
+  camera: string;
+  zones: string[];
+  label: string | null;
+}
+
+export interface EmployeeSession {
+  first_seen: string;
+  last_seen: string;
+  duration_hours: number;
+  cameras: string[];
+  zones: string[];
+  video_url?: string;  // NEW: Video URL for this session
+}
+
+export interface BreakSession {
+  break_start: string;
+  break_end: string;
+  duration_hours: number;
+  previous_presence: {
+    ended_at: string;
+    detection_count: number;
+    was_working: boolean;
+  };
+  next_presence: {
+    started_at: string;
+    detection_count: number;
+    was_working: boolean;
+  };
+  break_conditions: {
+    employee_not_detected: boolean;
+    desk_empty: boolean;
+    gap_duration_minutes: number;
+  };
+}
+
+export interface EmployeeBreakData {
+  employee_name: string;
+  work_hours: number;
+  office_time: number;              // NEW
+  total_time: number;               // NEW
+  total_break_time: number;
+  arrival_time: string;
+  departure_time: string;
+  total_breaks: number;
+  average_break_duration: number;
+  longest_break: number;
+  shortest_break: number;
+  break_frequency: number;
+  break_efficiency: number;
+  break_sessions: BreakSession[];
+}
+
+export interface WorkHoursResponse {
+  employees: Employee[];
+  total_employees: number;
+  total_work_hours: number;
+  average_work_hours: number;
+  period: {
+    start: string;
+    end: string;
+    duration_hours: number;
+  };
+  timezone_info: {
+    timezone: string;
+    offset: string;
+    abbreviation: string;
+  };
+}
+
+export interface BreakTimeResponse {
+  employees: EmployeeBreakData[];
+  total_employees: number;
+  total_break_time: number;
+  average_break_time: number;
+  timezone_info: {
+    timezone: string;
+    offset: string;
+    abbreviation: string;
+  };
+}
+
+export interface AttendanceResponse {
+  employees: Employee[];
+  summary: {
+    total_employees: number;
+    present: number;
+    absent: number;
+    half_day: number;
+    partial_day: number;
+    attendance_rate: number;
+  };
+}
+
+// Camera Types
+export interface Camera {
+  id: string;
+  name: string;
+  status: 'active' | 'inactive' | 'offline';
+  ip: string;
+  fps: number;
+  resolution: [number, number];
+  zones: string[];
+}
+
+export interface CameraSummary {
+  camera: string;
+  total_events: number;
+  active_employees: number;
+  violations: number;
+  last_activity: string;
+  status: string;
+  zones: string[];
+  activity_trend: string;
+}
+
+export interface CameraActivity {
+  timestamp: string;
+  camera: string;
+  event_type: string;
+  employee_name: string;
+  zone: string;
+  confidence: number;
+  description: string;
+}
+
+// Violation Types
+export interface Violation {
+  id: string;
+  timestamp: string;
+  camera: string;
+  employee_name: string;
+  assigned_employee: string;
+  confidence: 'high' | 'medium' | 'low';
+  zones: string[];
+  media_urls: {
+    snapshot: string;
+    thumbnail: string;
+    video: string;
+  };
+  assignment_confidence: string;
+  assignment_method: string;
+}
+
+export interface ViolationsResponse {
+  violations: Violation[];
+  total_violations: number;
+  summary: {
+    by_employee: Record<string, number>;
+    by_camera: Record<string, number>;
+    by_severity: Record<string, number>;
+  };
+}
+
+// Analytics Types
+export interface DashboardOverview {
+  total_employees: number;
+  active_employees: number;
+  total_violations: number;
+  total_work_hours: number;
+  average_productivity: number;
+}
+
+export interface Trend {
+  violations_trend: 'increasing' | 'decreasing' | 'stable';
+  productivity_trend: 'increasing' | 'decreasing' | 'stable';
+  attendance_trend: 'increasing' | 'decreasing' | 'stable';
+}
+
+export interface TopPerformer {
+  employee_name: string;
+  productivity_score: number;
+  work_hours: number;
+  violations: number;
+}
+
+export interface Alert {
+  type: string;
+  message: string;
+  severity: 'high' | 'medium' | 'low';
+  timestamp: string;
+}
+
+export interface DashboardData {
+  overview: DashboardOverview;
+  trends: Trend;
+  top_performers: TopPerformer[];
+  alerts: Alert[];
+  timezone_info?: {
+    timezone: string;
+    offset: string;
+    abbreviation: string;
+  };
+}
+
+export interface TrendData {
+  productivity_trends: {
+    daily: Array<{
+      date: string;
+      average: number;
+      employees: number;
+    }>;
+    hourly: Array<{
+      hour: number;
+      average: number;
+    }>;
+  };
+  violation_trends: {
+    daily: Array<{
+      date: string;
+      count: number;
+      severity_breakdown: Record<string, number>;
+    }>;
+  };
+}
+
+// Timezone Types
+export interface Timezone {
+  abbreviation: string;
+  iana: string;
+  name: string;
+  offset: string;
+  currentTime: string;
+}
+
+export interface TimezoneInfo {
+  timezone: string;
+  offset: string;
+  offsetMinutes: number;
+  isDST: boolean;
+  currentTime: string;
+  abbreviation: string;
+}
+
+// API Parameters
+export interface ApiParams {
+  start_date?: string;
+  end_date?: string;
+  timezone?: string;
+  employee_name?: string;
+  camera?: string;
+  hours?: number;
+  severity?: string;
+  limit?: number;
+  metric?: string;
+}
+
+// Activity Pattern Types
+export interface ActivityPattern {
+  peak_hours: Array<{
+    hour: number;
+    activity_count: number;
+  }>;
+  most_active_camera: string;
+  most_visited_zone: string;
+  activity_frequency: 'high' | 'medium' | 'low';
+  movement_pattern: 'consistent' | 'variable';
+  productivity_trends: 'increasing' | 'decreasing' | 'stable';
+}
+
+export interface EmployeeActivityPattern {
+  employee_name: string;
+  activity_patterns: ActivityPattern;
+  work_efficiency: number;
+  productivity_score: number;
+}
+
+// Daily Violations Summary API Types
+export interface ViolationData {
+  timestamp: string;
+  timestampRelative: string;
+  camera: string;
+  assignedEmployee: string;
+  assignmentMethod: string;
+  assignmentConfidence: string;
+  assignmentReason: string | null;
+  faceEmployeeName: string | null;
+  deskEmployeeName: string | null;
+  zones: string[];
+  objects: string[];
+  confidence: number | null;
+  type: string;
+  media: ViolationMedia;
+}
+
+export interface ViolationConfidence {
+  score: number;
+  source: string;
+  frigate_score?: number;
+  frigate_top_score?: number;
+  detector_type?: string;
+  model_hash?: string;
+  note: string;
+}
+
+export interface ViolationMedia {
+  thumbnail_url: string;
+  snapshot_url: string;
+  video_url: string;
+  video_source: string;
+  timestamp: number;
+  camera: string;
+  violation_id: string;
+  event_id: string;
+  severity: string;
+  has_clip: number;
+  has_snapshot: number;
+  confidence: ViolationConfidence;
+  note: string;
+  frigate_api_url: string;
+}
+
+export interface DailyViolationsSummaryData {
+  summary: {
+    employeeName: string;
+    totalViolations: number;
+    violations: ViolationData[];
+    assignmentMethods: {
+      face_recognition: number;
+      desk_zone: number;
+      unknown: number;
+      camera_fallback: number | null;
+    };
+  }[];
+  count: number;
+  filters: {
+    hours?: number;
+    start_date?: string;
+    end_date?: string;
+    limit?: number;
+  };
+}
+
+export interface DailyViolationsSummaryResponse {
+  success: boolean;
+  message: string;
+  data: DailyViolationsSummaryData;
+  timestamp: string;
+}
