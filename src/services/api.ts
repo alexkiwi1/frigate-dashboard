@@ -287,12 +287,25 @@ class ApiService {
   private transformMediaUrl(url: string): string {
     if (!url) return url;
     
-    // Convert direct Frigate URLs to proxied URLs
-    // http://10.0.20.6:5000/api/events/... -> /media/api/events/...
-    if (url.includes('10.0.20.6:5000')) {
-      return url.replace('http://10.0.20.6:5000', '/media');
+    // If already relative, keep as-is
+    if (url.startsWith('/')) {
+      console.log('URL already relative:', url);
+      return url;
     }
+
+    const mediaBase = process.env['REACT_APP_MEDIA_BASE'] || '/media';
     
+    // Strip any private LAN origin (10.x.x.x, 192.168.x.x, 172.16-31.x.x) and map to mediaBase
+    const lanOriginRegex = /^https?:\/\/(?:10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?::\d+)?(\/.*)$/i;
+    const match = url.match(lanOriginRegex);
+    
+    if (match) {
+      const transformed = `${mediaBase}${match[1]}`;
+      console.log('Transformed URL:', url, '→', transformed);
+      return transformed;
+    }
+
+    console.log('URL not transformed (no LAN origin match):', url);
     return url;
   }
 
@@ -300,9 +313,8 @@ class ApiService {
   private transformResponseMediaUrls(data: any): void {
     if (!data) return;
     
-    if (typeof data === 'string' && data.includes('10.0.20.6:5000')) {
-      // This is a URL string, transform it
-      return; // Skip string transformation in this method
+    if (typeof data === 'string') {
+      return; // Strings are handled when assigned to *url fields
     }
     
     if (Array.isArray(data)) {
