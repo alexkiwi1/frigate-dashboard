@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock, TrendingUp, Users, Calendar, MapPin, Activity } from 'lucide-react';
-import { Employee, EmployeeBreakData } from '../types/api';
+import { Employee, EmployeeBreakData } from '../../types/api';
 
 interface WorkHoursSummaryProps {
   employees: Employee[];

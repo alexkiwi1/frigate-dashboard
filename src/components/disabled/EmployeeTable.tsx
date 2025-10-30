@@ -1,5 +1,5 @@
 import React from 'react';
-import { Employee } from '../types/api';
+import { Employee } from '../../types/api';
 import { Clock, MapPin, Activity, AlertCircle } from 'lucide-react';
 
 interface EmployeeTableProps {

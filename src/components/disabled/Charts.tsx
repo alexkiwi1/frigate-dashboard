@@ -13,7 +13,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import { TrendData, ViolationsResponse } from '../types/api';
+import { TrendData, ViolationsResponse } from '../../types/api';
 
 interface ChartsProps {
   trendData: TrendData | null;

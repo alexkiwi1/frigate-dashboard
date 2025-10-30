@@ -1,5 +1,5 @@
 import React from 'react';
-import { DashboardData } from '../types/api';
+import { DashboardData } from '../../types/api';
 import { Users, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
 
 interface OverviewCardsProps {

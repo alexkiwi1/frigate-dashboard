@@ -1,5 +1,5 @@
 import React from 'react';
-import { Violation } from '../types/api';
+import { Violation } from '../../types/api';
 import { AlertTriangle, Camera, User, ExternalLink } from 'lucide-react';
 
 interface ViolationsTableProps {
